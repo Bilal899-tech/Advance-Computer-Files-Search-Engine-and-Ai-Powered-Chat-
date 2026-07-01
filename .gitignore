@@ -1,0 +1,72 @@
+# Ignore all text files strictly EXCEPT requirements files
+*.txt
+!requirements.txt
+!strict.requrements.txt
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# Virtual Environment
+venv/
+env/
+ENV/
+.venv
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Database
+*.db
+*.sqlite
+*.sqlite3
+
+# Vector store and embeddings
+data/embeddings/
+*.index
+metadata.json
+
+# Logs
+logs/
+*.log
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Evaluation data (optional, keep if you want to share)
+# evals/
+
+# Test documents (optional)
+# data/test_documents/
+
+# Temporary files
+*.tmp
+*.bak
+*.swp
+*~
+*.txt
+# JSON reports
+report.json

@@ -1,0 +1,387 @@
+{
+  "metadata": {
+    "name": "PDF Chat Assistant Evaluation Dataset",
+    "version": "1.0",
+    "date": "2026-07-01",
+    "description": "Structured evaluation tests measuring AI system quality, accuracy, and reliability"
+  },
+  "timestamp": "2026-07-02 00:18:31",
+  "summary": {
+    "total_cases": 20,
+    "passed": 7,
+    "failed": 13,
+    "pass_rate": 35.0,
+    "average_score": 0.38333333333333336,
+    "average_response_time": 19.144394290447234,
+    "category_scores": {
+      "identity": 0.0,
+      "temporal": 0.0,
+      "components": 1.0,
+      "performance": 0.0,
+      "configuration": 1.0,
+      "features": 0.0,
+      "recommendations": 0.0,
+      "summary": 0.0,
+      "edge_case": 0.5,
+      "future_work": 0.0,
+      "purpose": 0.6666666666666666
+    },
+    "type_scores": {
+      "factual": 0.42857142857142855,
+      "comprehension": 0.2222222222222222,
+      "summary": 0.0,
+      "robustness": 0.5
+    },
+    "difficulty_scores": {
+      "easy": 0.0,
+      "medium": 0.5185185185185186,
+      "hard": 0.42857142857142855
+    }
+  },
+  "evaluation_results": [
+    {
+      "id": 1,
+      "question": "What is the project title?",
+      "type": "factual",
+      "difficulty": "easy",
+      "category": "identity",
+      "response": "I don't have information about that in the uploaded PDFs.",
+      "expected_keywords": [
+        "AI-Powered Document Analysis System"
+      ],
+      "expected_answer": "AI-Powered Document Analysis System",
+      "score": 0.0,
+      "response_time": 15.093190670013428,
+      "passed": false,
+      "has_context": true
+    },
+    {
+      "id": 2,
+      "question": "Who is the author of the report?",
+      "type": "factual",
+      "difficulty": "easy",
+      "category": "identity",
+      "response": "I don't have information about that in the uploaded PDFs.",
+      "expected_keywords": [
+        "John Doe"
+      ],
+      "expected_answer": "John Doe",
+      "score": 0.0,
+      "response_time": 16.75020980834961,
+      "passed": false,
+      "has_context": true
+    },
+    {
+      "id": 3,
+      "question": "What is the date of the report?",
+      "type": "factual",
+      "difficulty": "easy",
+      "category": "temporal",
+      "response": "I don't have information about that in the uploaded PDFs.",
+      "expected_keywords": [
+        "July 1, 2026",
+        "2026"
+      ],
+      "expected_answer": "July 1, 2026",
+      "score": 0.0,
+      "response_time": 16.984020233154297,
+      "passed": false,
+      "has_context": true
+    },
+    {
+      "id": 4,
+      "question": "What is the version number?",
+      "type": "factual",
+      "difficulty": "easy",
+      "category": "identity",
+      "response": "I don't have information about that in the uploaded PDFs.",
+      "expected_keywords": [
+        "1.0"
+      ],
+      "expected_answer": "1.0",
+      "score": 0.0,
+      "response_time": 18.322903871536255,
+      "passed": false,
+      "has_context": true
+    },
+    {
+      "id": 5,
+      "question": "What embedding model is used?",
+      "type": "factual",
+      "difficulty": "medium",
+      "category": "components",
+      "response": "The embedding model used in the system is all-minilm:l6-v2.",
+      "expected_keywords": [
+        "all-minilm:l6-v2"
+      ],
+      "expected_answer": "all-minilm:l6-v2",
+      "score": 1.0,
+      "response_time": 20.90140652656555,
+      "passed": true,
+      "has_context": true
+    },
+    {
+      "id": 6,
+      "question": "What vector store does the system use?",
+      "type": "factual",
+      "difficulty": "medium",
+      "category": "components",
+      "response": "The system uses FAISS for vector storage. Based on the context provided, FAISS is mentioned in relation to embeddings and memories, which are typically stored using a vector store like FAISS.",
+      "expected_keywords": [
+        "FAISS"
+      ],
+      "expected_answer": "FAISS",
+      "score": 1.0,
+      "response_time": 23.765694856643677,
+      "passed": true,
+      "has_context": true
+    },
+    {
+      "id": 7,
+      "question": "What database is used for data persistence?",
+      "type": "factual",
+      "difficulty": "medium",
+      "category": "components",
+      "response": "SQLite is used for data persistence.",
+      "expected_keywords": [
+        "SQLite"
+      ],
+      "expected_answer": "SQLite",
+      "score": 1.0,
+      "response_time": 18.596575260162354,
+      "passed": true,
+      "has_context": true
+    },
+    {
+      "id": 8,
+      "question": "What GUI framework is used?",
+      "type": "factual",
+      "difficulty": "medium",
+      "category": "components",
+      "response": "The GUI framework used in this project is tkinter.",
+      "expected_keywords": [
+        "tkinter"
+      ],
+      "expected_answer": "tkinter",
+      "score": 1.0,
+      "response_time": 17.922842741012573,
+      "passed": true,
+      "has_context": true
+    },
+    {
+      "id": 9,
+      "question": "What is the average response time?",
+      "type": "factual",
+      "difficulty": "hard",
+      "category": "performance",
+      "response": "I don't have information about that in the uploaded PDFs.",
+      "expected_keywords": [
+        "2-3 seconds",
+        "2 to 3 seconds"
+      ],
+      "expected_answer": "2-3 seconds",
+      "score": 0.0,
+      "response_time": 18.68641686439514,
+      "passed": false,
+      "has_context": true
+    },
+    {
+      "id": 10,
+      "question": "What is the accuracy on factual questions?",
+      "type": "factual",
+      "difficulty": "hard",
+      "category": "performance",
+      "response": "I don't have information about that in the uploaded PDFs.",
+      "expected_keywords": [
+        "85%"
+      ],
+      "expected_answer": "85%",
+      "score": 0.0,
+      "response_time": 25.623873710632324,
+      "passed": false,
+      "has_context": true
+    },
+    {
+      "id": 11,
+      "question": "What is the chunk size used?",
+      "type": "factual",
+      "difficulty": "hard",
+      "category": "configuration",
+      "response": "The chunk size used is 500 characters.",
+      "expected_keywords": [
+        "500 characters",
+        "500"
+      ],
+      "expected_answer": "500 characters",
+      "score": 1.0,
+      "response_time": 18.869280338287354,
+      "passed": true,
+      "has_context": true
+    },
+    {
+      "id": 12,
+      "question": "What is the overlap between chunks?",
+      "type": "factual",
+      "difficulty": "hard",
+      "category": "configuration",
+      "response": "The overlap between chunks in this context is 50 characters.",
+      "expected_keywords": [
+        "50 characters",
+        "50"
+      ],
+      "expected_answer": "50 characters",
+      "score": 1.0,
+      "response_time": 19.893359661102295,
+      "passed": true,
+      "has_context": true
+    },
+    {
+      "id": 13,
+      "question": "Name one key feature mentioned in the report.",
+      "type": "factual",
+      "difficulty": "medium",
+      "category": "features",
+      "response": "Knowledge Agent (RAG pipeline with confidence scoring + source citations) is a key feature mentioned in the provided context.",
+      "expected_keywords": [
+        "PDF text extraction",
+        "text chunking",
+        "vector similarity search",
+        "local AI model integration",
+        "SQLite",
+        "desktop UI"
+      ],
+      "expected_answer": "Any one of: PDF text extraction, text chunking, vector similarity search, local AI model integration, SQLite, desktop UI",
+      "score": 0.0,
+      "response_time": 21.409605503082275,
+      "passed": false,
+      "has_context": true
+    },
+    {
+      "id": 14,
+      "question": "What is one recommendation from the report?",
+      "type": "factual",
+      "difficulty": "medium",
+      "category": "recommendations",
+      "response": "I don't have information about that in the uploaded PDFs.",
+      "expected_keywords": [
+        "larger models",
+        "batch processing",
+        "export functionality",
+        "additional document formats"
+      ],
+      "expected_answer": "Any one of: Use larger models, add batch processing, implement export functionality, add support for additional formats",
+      "score": 0.0,
+      "response_time": 18.007413864135742,
+      "passed": false,
+      "has_context": true
+    },
+    {
+      "id": 15,
+      "question": "What is the main benefit of this system according to the conclusion?",
+      "type": "comprehension",
+      "difficulty": "medium",
+      "category": "summary",
+      "response": "I don't have information about that in the uploaded PDFs.",
+      "expected_keywords": [
+        "local-only",
+        "data privacy",
+        "data sovereignty",
+        "user's machine"
+      ],
+      "expected_answer": "All processing happens on the user's machine, ensuring data privacy and sovereignty",
+      "score": 0.0,
+      "response_time": 16.93329095840454,
+      "passed": false,
+      "has_context": true
+    },
+    {
+      "id": 16,
+      "question": "Can you summarize what this report is about?",
+      "type": "summary",
+      "difficulty": "medium",
+      "category": "summary",
+      "response": "I don't have information about that in the uploaded PDFs.",
+      "expected_keywords": [
+        "sample project report",
+        "PDF Chat Assistant",
+        "test data",
+        "document analysis"
+      ],
+      "expected_answer": "A sample report about an AI-Powered Document Analysis System that provides test data",
+      "score": 0.0,
+      "response_time": 15.573177576065063,
+      "passed": false,
+      "has_context": true
+    },
+    {
+      "id": 17,
+      "question": "What is the capital of France?",
+      "type": "robustness",
+      "difficulty": "hard",
+      "category": "edge_case",
+      "response": "I don't have information about that in the uploaded PDFs.",
+      "expected_keywords": [
+        "don't have information",
+        "not in the uploaded PDFs"
+      ],
+      "expected_answer": "Should state that information is not available in the PDFs",
+      "score": 0.5,
+      "response_time": 18.57784128189087,
+      "passed": false,
+      "has_context": true
+    },
+    {
+      "id": 18,
+      "question": "Who won the 2022 World Cup?",
+      "type": "robustness",
+      "difficulty": "hard",
+      "category": "edge_case",
+      "response": "I don't have information about that in the uploaded PDFs.",
+      "expected_keywords": [
+        "don't have information",
+        "not in the uploaded PDFs"
+      ],
+      "expected_answer": "Should state that information is not available in the PDFs",
+      "score": 0.5,
+      "response_time": 19.30358338356018,
+      "passed": false,
+      "has_context": true
+    },
+    {
+      "id": 19,
+      "question": "What future improvements are suggested?",
+      "type": "comprehension",
+      "difficulty": "hard",
+      "category": "future_work",
+      "response": "I don't have information about that in the uploaded PDFs.",
+      "expected_keywords": [
+        "multi-language",
+        "image extraction",
+        "image extraction"
+      ],
+      "expected_answer": "Multi-language support and better PDF image extraction",
+      "score": 0.0,
+      "response_time": 19.54046392440796,
+      "passed": false,
+      "has_context": true
+    },
+    {
+      "id": 20,
+      "question": "What is the purpose of this document?",
+      "type": "comprehension",
+      "difficulty": "medium",
+      "category": "purpose",
+      "response": "The purpose of this document is to provide test data that can be used to evaluate the system's ability to retrieve information and answer questions accurately.",
+      "expected_keywords": [
+        "test data",
+        "evaluate",
+        "PDF Chat Assistant"
+      ],
+      "expected_answer": "To provide test data for evaluating the PDF Chat Assistant application",
+      "score": 0.6666666666666666,
+      "response_time": 22.132734775543213,
+      "passed": true,
+      "has_context": true
+    }
+  ]
+}

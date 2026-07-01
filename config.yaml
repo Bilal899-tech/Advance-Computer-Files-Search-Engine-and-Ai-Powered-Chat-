@@ -1,0 +1,45 @@
+models:
+  # High-resource default (for powerful hardware)
+  chat: qwen2.5:3b
+  # Low-resource fallback (for basic laptops)
+  chat_low: qwen3:0.6b
+  embedding: all-minilm:l6-v2
+  # Search-specific model (overrides chat when in search mode)
+  search_chat: qwen3:0.6b
+
+ollama:
+  host: http://localhost:11434
+
+paths:
+  pdfs: data/pdfs
+  embeddings: data/embeddings
+  cache: data/cache
+  logs: logs
+  database: data/app.db
+
+chunking:
+  chunk_size: 500
+  chunk_overlap: 50
+
+vector_store:
+  index_file: data/embeddings/faiss.index
+  metadata_file: data/embeddings/metadata.json
+  top_k: 3
+  use_normalized_embeddings: true
+
+rag:
+  enable_enhanced_rag: false
+
+search:
+  # Search mode: 'quick' (rule-based, 0% AI) or 'smart' (rule-based + AI summary, ~20% AI)
+  default_mode: quick
+  # Context window characters around each keyword match
+  context_chars: 300
+  # Max results per search
+  max_results: 20
+  # Cross-location search roots
+  search_roots:
+    - data/pdfs
+    - data/test_documents
+  # Model tier: 'low' (qwen3:0.6b) or 'high' (qwen2.5:3b)
+  model_tier: low

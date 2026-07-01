@@ -1,0 +1,190 @@
+{
+  "metadata": {
+    "name": "PDF Chat Assistant Evaluation Dataset",
+    "version": "1.0",
+    "date": "2026-07-01",
+    "description": "Structured evaluation tests measuring AI system quality, accuracy, and reliability"
+  },
+  "evaluation_cases": [
+    {
+      "id": 1,
+      "type": "factual",
+      "difficulty": "easy",
+      "category": "identity",
+      "question": "What is the project title?",
+      "expected_keywords": ["AI-Powered Document Analysis System"],
+      "expected_answer": "AI-Powered Document Analysis System"
+    },
+    {
+      "id": 2,
+      "type": "factual",
+      "difficulty": "easy",
+      "category": "identity",
+      "question": "Who is the author of the report?",
+      "expected_keywords": ["John Doe"],
+      "expected_answer": "John Doe"
+    },
+    {
+      "id": 3,
+      "type": "factual",
+      "difficulty": "easy",
+      "category": "temporal",
+      "question": "What is the date of the report?",
+      "expected_keywords": ["July 1, 2026", "2026"],
+      "expected_answer": "July 1, 2026"
+    },
+    {
+      "id": 4,
+      "type": "factual",
+      "difficulty": "easy",
+      "category": "identity",
+      "question": "What is the version number?",
+      "expected_keywords": ["1.0"],
+      "expected_answer": "1.0"
+    },
+    {
+      "id": 5,
+      "type": "factual",
+      "difficulty": "medium",
+      "category": "components",
+      "question": "What embedding model is used?",
+      "expected_keywords": ["all-minilm:l6-v2"],
+      "expected_answer": "all-minilm:l6-v2"
+    },
+    {
+      "id": 6,
+      "type": "factual",
+      "difficulty": "medium",
+      "category": "components",
+      "question": "What vector store does the system use?",
+      "expected_keywords": ["FAISS"],
+      "expected_answer": "FAISS"
+    },
+    {
+      "id": 7,
+      "type": "factual",
+      "difficulty": "medium",
+      "category": "components",
+      "question": "What database is used for data persistence?",
+      "expected_keywords": ["SQLite"],
+      "expected_answer": "SQLite"
+    },
+    {
+      "id": 8,
+      "type": "factual",
+      "difficulty": "medium",
+      "category": "components",
+      "question": "What GUI framework is used?",
+      "expected_keywords": ["tkinter"],
+      "expected_answer": "tkinter"
+    },
+    {
+      "id": 9,
+      "type": "factual",
+      "difficulty": "hard",
+      "category": "performance",
+      "question": "What is the average response time?",
+      "expected_keywords": ["2-3 seconds", "2 to 3 seconds"],
+      "expected_answer": "2-3 seconds"
+    },
+    {
+      "id": 10,
+      "type": "factual",
+      "difficulty": "hard",
+      "category": "performance",
+      "question": "What is the accuracy on factual questions?",
+      "expected_keywords": ["85%"],
+      "expected_answer": "85%"
+    },
+    {
+      "id": 11,
+      "type": "factual",
+      "difficulty": "hard",
+      "category": "configuration",
+      "question": "What is the chunk size used?",
+      "expected_keywords": ["500 characters", "500"],
+      "expected_answer": "500 characters"
+    },
+    {
+      "id": 12,
+      "type": "factual",
+      "difficulty": "hard",
+      "category": "configuration",
+      "question": "What is the overlap between chunks?",
+      "expected_keywords": ["50 characters", "50"],
+      "expected_answer": "50 characters"
+    },
+    {
+      "id": 13,
+      "type": "factual",
+      "difficulty": "medium",
+      "category": "features",
+      "question": "Name one key feature mentioned in the report.",
+      "expected_keywords": ["PDF text extraction", "text chunking", "vector similarity search", "local AI model integration", "SQLite", "desktop UI"],
+      "expected_answer": "Any one of: PDF text extraction, text chunking, vector similarity search, local AI model integration, SQLite, desktop UI"
+    },
+    {
+      "id": 14,
+      "type": "factual",
+      "difficulty": "medium",
+      "category": "recommendations",
+      "question": "What is one recommendation from the report?",
+      "expected_keywords": ["larger models", "batch processing", "export functionality", "additional document formats"],
+      "expected_answer": "Any one of: Use larger models, add batch processing, implement export functionality, add support for additional formats"
+    },
+    {
+      "id": 15,
+      "type": "comprehension",
+      "difficulty": "medium",
+      "category": "summary",
+      "question": "What is the main benefit of this system according to the conclusion?",
+      "expected_keywords": ["local-only", "data privacy", "data sovereignty", "user's machine"],
+      "expected_answer": "All processing happens on the user's machine, ensuring data privacy and sovereignty"
+    },
+    {
+      "id": 16,
+      "type": "summary",
+      "difficulty": "medium",
+      "category": "summary",
+      "question": "Can you summarize what this report is about?",
+      "expected_keywords": ["sample project report", "PDF Chat Assistant", "test data", "document analysis"],
+      "expected_answer": "A sample report about an AI-Powered Document Analysis System that provides test data"
+    },
+    {
+      "id": 17,
+      "type": "robustness",
+      "difficulty": "hard",
+      "category": "edge_case",
+      "question": "What is the capital of France?",
+      "expected_keywords": ["don't have information", "not in the uploaded PDFs"],
+      "expected_answer": "Should state that information is not available in the PDFs"
+    },
+    {
+      "id": 18,
+      "type": "robustness",
+      "difficulty": "hard",
+      "category": "edge_case",
+      "question": "Who won the 2022 World Cup?",
+      "expected_keywords": ["don't have information", "not in the uploaded PDFs"],
+      "expected_answer": "Should state that information is not available in the PDFs"
+    },
+    {
+      "id": 19,
+      "type": "comprehension",
+      "difficulty": "hard",
+      "category": "future_work",
+      "question": "What future improvements are suggested?",
+      "expected_keywords": ["multi-language", "image extraction", "image extraction"],
+      "expected_answer": "Multi-language support and better PDF image extraction"
+    },
+    {
+      "id": 20,
+      "type": "comprehension",
+      "difficulty": "medium",
+      "category": "purpose",
+      "question": "What is the purpose of this document?",
+      "expected_keywords": ["test data", "evaluate", "PDF Chat Assistant"],
+      "expected_answer": "To provide test data for evaluating the PDF Chat Assistant application"
+    }
+  ]
+}
