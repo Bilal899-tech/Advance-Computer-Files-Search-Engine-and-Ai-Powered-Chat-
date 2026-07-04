@@ -1,0 +1,8 @@
+pypdf
+faiss-cpu
+numpy
+ollama
+pyyaml
+smolagents
+transformers
+torch
