@@ -875,12 +875,12 @@ class ChatApp:
         def on_cancel():
             dialog.destroy()
         
-        tk.Button(action_frame, text="Import Selected", 
+        tk.Button(action_frame, text="✅ Done - Import Selected", 
                  command=on_import,
                  bg=COLORS['primary'], fg=COLORS['white'],
-                 font=("Inter", 11, "bold"),
+                 font=("Inter", 12, "bold"),
                  relief=tk.FLAT, cursor='hand2',
-                 padx=24, pady=10).pack(side=tk.RIGHT, padx=(12, 0))
+                 padx=32, pady=12).pack(side=tk.RIGHT, padx=(12, 0))
         
         tk.Button(action_frame, text="Cancel", 
                  command=on_cancel,
