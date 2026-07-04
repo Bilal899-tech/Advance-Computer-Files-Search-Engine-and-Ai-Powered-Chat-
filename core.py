@@ -10,11 +10,69 @@ import faiss
 import numpy as np
 import ollama
 import time
+import subprocess
+import psutil
 from datetime import datetime
 from pypdf import PdfReader
 from pathlib import Path
 
 logger = logging.getLogger(__name__)
+
+
+def detect_hardware():
+    """Detect system hardware and return a capability profile.
+
+    Returns:
+        dict with keys: tier ('low'|'high'), gpu_name, gpu_vram_mb,
+                        cpu_cores, ram_gb, models_available
+    """
+    profile = {
+        'tier': 'low',
+        'gpu_name': None,
+        'gpu_vram_mb': 0,
+        'cpu_cores': psutil.cpu_count(logical=True) or 0,
+        'ram_gb': round(psutil.virtual_memory().total / (1024**3), 1),
+        'models_available': [],
+    }
+
+    # Check for NVIDIA GPU via nvidia-smi
+    try:
+        result = subprocess.run(
+            ['nvidia-smi', '--query-gpu=name,memory.total', '--format=csv,noheader,nounits'],
+            capture_output=True, text=True, timeout=10
+        )
+        if result.returncode == 0 and result.stdout.strip():
+            lines = result.stdout.strip().splitlines()
+            if lines:
+                parts = lines[0].split(',')
+                profile['gpu_name'] = parts[0].strip()
+                try:
+                    profile['gpu_vram_mb'] = int(parts[1].strip())
+                except (ValueError, IndexError):
+                    pass
+    except (FileNotFoundError, subprocess.TimeoutExpired, OSError):
+        pass
+
+    # Check available Ollama models
+    try:
+        client = ollama.Client()
+        models = client.list()
+        profile['models_available'] = [m['name'] for m in models.get('models', [])]
+    except Exception:
+        pass
+
+    # Determine tier: high if GPU >= 4GB VRAM, or CPU >= 8GB RAM + 4 cores
+    if profile['gpu_vram_mb'] >= 4096:
+        profile['tier'] = 'high'
+    elif profile['ram_gb'] >= 8 and profile['cpu_cores'] >= 4:
+        profile['tier'] = 'high'
+
+    logger.info(
+        f"Hardware detected: tier={profile['tier']}, "
+        f"gpu={profile['gpu_name'] or 'none'} ({profile['gpu_vram_mb']}MB), "
+        f"cpu={profile['cpu_cores']} cores, ram={profile['ram_gb']}GB"
+    )
+    return profile
 
 
 class Config:
@@ -31,6 +89,37 @@ class Config:
         # Defaults
         self.vector_store['top_k'] = self.vector_store.get('top_k', 3)
         self.vector_store['use_normalized_embeddings'] = self.vector_store.get('use_normalized_embeddings', True)
+
+    def auto_select_model(self, profile=None):
+        """Auto-detect hardware and select the best model tier.
+
+        Args:
+            profile: Optional hardware profile from detect_hardware().
+                     If None, runs detection.
+
+        Returns:
+            The selected tier: 'low' or 'high'
+        """
+        if profile is None:
+            profile = detect_hardware()
+        tier = profile['tier']
+
+        if tier == 'high':
+            self.models['chat'] = self.data['models'].get('chat', 'qwen2.5:3b')
+        else:
+            self.models['chat'] = self.data['models'].get('chat_low', 'qwen3:0.6b')
+
+        logger.info(f"Auto-selected model: {self.models['chat']} (tier: {tier})")
+        return tier
+
+    def auto_select_search_tier(self, tier):
+        """Set the search model tier based on hardware detection."""
+        self.search['model_tier'] = tier
+        if tier == 'high':
+            self.models['search_chat'] = self.data['models'].get('chat', 'qwen2.5:3b')
+        else:
+            self.models['search_chat'] = self.data['models'].get('chat_low', 'qwen3:0.6b')
+        logger.info(f"Auto-selected search model: {self.models['search_chat']} (tier: {tier})")
 
 
 class Database:

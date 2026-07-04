@@ -7,7 +7,7 @@ from pathlib import Path
 from datetime import datetime
 import threading
 import webbrowser
-from core import Config, VectorStore, Database, DocumentProcessor
+from core import Config, VectorStore, Database, DocumentProcessor, detect_hardware
 from smolagent_helper import KnowledgeAgent
 from search_engine import DualSearchEngine, CrossLocationFinder
 
@@ -55,6 +55,7 @@ class ChatApp:
         self.root.configure(bg=COLORS['background'])
         
         self.config = Config()
+        self._auto_configure_model()
         self.db = Database(self.config.paths['database'])
         self.vector_store = VectorStore(self.config)
         self.doc_processor = DocumentProcessor(self.config)
@@ -443,10 +444,18 @@ class ChatApp:
         tier = self.config.search.get('model_tier', 'low')
         model_name = self.config.models.get('search_chat', self.config.models['chat'])
         self.model_label = tk.Label(status_items, 
-                                   text=f"Search: {model_name} ({tier})", 
-                                   font=("Inter", 10), fg=COLORS['on_surface_variant'],
-                                   bg=COLORS['surface_container_low'])
-        self.model_label.pack(side=tk.LEFT)
+                                    text=f"Model: {model_name} ({tier})", 
+                                    font=("Inter", 10), fg=COLORS['on_surface_variant'],
+                                    bg=COLORS['surface_container_low'])
+        self.model_label.pack(side=tk.LEFT, padx=(0, 8))
+        
+        self.auto_detect_btn = tk.Button(status_items, text="Auto-Detect",
+                                        command=self._run_auto_detect,
+                                        bg=COLORS['surface_container'], fg=COLORS['primary'],
+                                        font=("Inter", 9, "bold"),
+                                        relief=tk.FLAT, cursor='hand2',
+                                        padx=8, pady=2)
+        self.auto_detect_btn.pack(side=tk.LEFT)
         
         # Right section: stats
         right_status = tk.Frame(status_bar, bg=COLORS['surface_container_low'])
@@ -498,9 +507,55 @@ class ChatApp:
         self.folder_watcher_ready = True
         self.folder_watcher_status_label.config(text="🟢 Folder Watcher", fg=COLORS['success'])
         
+        # Update model display
+        self._update_model_display()
         # Update stats
         self.update_stats()
     
+    def _auto_configure_model(self):
+        """Auto-detect hardware and select the best model for this system."""
+        try:
+            profile = detect_hardware()
+            tier = self.config.auto_select_model(profile)
+            self.config.auto_select_search_tier(tier)
+            self._detected_profile = profile
+            logger.info(f"Auto-configured model: {self.config.models['chat']} (tier: {tier})")
+        except Exception as e:
+            logger.warning(f"Auto-config failed, using defaults: {e}")
+            self._detected_profile = None
+
+    def _run_auto_detect(self):
+        """Run auto-detection in a background thread and update UI."""
+        def task():
+            self.root.after(0, lambda: self.auto_detect_btn.config(text="Detecting...", state=tk.DISABLED))
+            try:
+                profile = detect_hardware()
+                tier = self.config.auto_select_model(profile)
+                self.config.auto_select_search_tier(tier)
+                self._detected_profile = profile
+                self.root.after(0, self._update_model_display)
+                self.root.after(0, lambda: messagebox.showinfo(
+                    "Auto-Detect Complete",
+                    f"Hardware: {profile['cpu_cores']} cores, {profile['ram_gb']}GB RAM\n"
+                    f"GPU: {profile['gpu_name'] or 'None'} ({profile['gpu_vram_mb']}MB VRAM)\n"
+                    f"Selected Model: {self.config.models['chat']} ({tier} tier)"
+                ))
+            except Exception as e:
+                logger.exception("Auto-detect failed")
+                self.root.after(0, lambda: messagebox.showerror("Auto-Detect Error", str(e)))
+            finally:
+                self.root.after(0, lambda: self.auto_detect_btn.config(text="Auto-Detect", state=tk.NORMAL))
+
+        thread = threading.Thread(target=task)
+        thread.daemon = True
+        thread.start()
+
+    def _update_model_display(self):
+        """Update the model label in the status bar."""
+        tier = self.config.search.get('model_tier', 'low')
+        model_name = self.config.models.get('search_chat', self.config.models['chat'])
+        self.model_label.config(text=f"Model: {model_name} ({tier})")
+
     def update_stats(self):
         doc_count = self.db.get_document_count()
         chunk_count = self.vector_store.get_chunk_count()
