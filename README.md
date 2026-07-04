@@ -35,7 +35,7 @@ A local-first AI workspace that automatically indexes documents, performs semant
 1. **Install Ollama**: Download from https://ollama.com/download
 2. **Pull the required models**:
    ```bash
-   ollama pull qwen2.5:3b
+   ollama pull qwen3:0.6b
    ollama pull all-minilm:l6-v2
    ```
 3. **Start Ollama**:
