@@ -770,7 +770,8 @@ class ChatApp:
     def _show_folder_import_dialog(self, folder_path, files):
         dialog = tk.Toplevel(self.root)
         dialog.title("Select Files to Import")
-        dialog.geometry("600x450")
+        dialog.geometry("600x550")
+        dialog.minsize(500, 400)
         dialog.configure(bg=COLORS['background'])
         dialog.transient(self.root)
         dialog.grab_set()
