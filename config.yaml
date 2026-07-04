@@ -2,10 +2,10 @@ models:
   # High-resource default (for powerful hardware)
   chat: qwen2.5:3b
   # Low-resource fallback (for basic laptops)
-  chat_low: qwen3:0.6b
+  chat_low: qwen3:06b
   embedding: all-minilm:l6-v2
   # Search-specific model (overrides chat when in search mode)
-  search_chat: qwen3:0.6b
+  search_chat: qwen3:06b
 
 ollama:
   host: http://localhost:11434

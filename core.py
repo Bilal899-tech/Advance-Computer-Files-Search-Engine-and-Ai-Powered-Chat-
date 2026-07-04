@@ -107,7 +107,7 @@ class Config:
         if tier == 'high':
             self.models['chat'] = self.data['models'].get('chat', 'qwen2.5:3b')
         else:
-            self.models['chat'] = self.data['models'].get('chat_low', 'qwen3:0.6b')
+            self.models['chat'] = self.data['models'].get('chat_low', 'qwen3:06b')
 
         logger.info(f"Auto-selected model: {self.models['chat']} (tier: {tier})")
         return tier
@@ -118,7 +118,7 @@ class Config:
         if tier == 'high':
             self.models['search_chat'] = self.data['models'].get('chat', 'qwen2.5:3b')
         else:
-            self.models['search_chat'] = self.data['models'].get('chat_low', 'qwen3:0.6b')
+            self.models['search_chat'] = self.data['models'].get('chat_low', 'qwen3:06b')
         logger.info(f"Auto-selected search model: {self.models['search_chat']} (tier: {tier})")
 
 

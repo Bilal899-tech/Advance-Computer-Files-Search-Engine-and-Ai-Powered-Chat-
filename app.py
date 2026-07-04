@@ -111,6 +111,16 @@ class ChatApp:
         self.right_pane.add(chat_frame, weight=2)
         self.create_chat_area(chat_frame)
         
+        # Set initial sash positions after window is drawn
+        def set_sash_position():
+            try:
+                # Set sash position to 350 pixels from left
+                self.right_pane.sashpos(0, 350)
+            except:
+                pass
+        
+        self.root.after(100, set_sash_position)
+        
         # Status bar at bottom
         self.create_status_bar(main_container)
     
@@ -139,28 +149,28 @@ class ChatApp:
                 bg=COLORS['white']).pack(side=tk.LEFT)
         
         # Search box
-        search_frame = tk.Frame(header, bg=COLORS['surface_container_low'], 
+        search_frame = tk.Frame(header, bg=COLORS['white'], 
                                highlightbackground=COLORS['outline_variant'],
                                highlightthickness=1)
         search_frame.pack(side=tk.LEFT, padx=40, pady=16, fill=tk.X, expand=True)
         
-        self.search_var = tk.StringVar()
-        self.search_var.trace('w', self.on_search_change)
+        self.top_search_var = tk.StringVar()
+        self.top_search_var.trace('w', self.on_search_change)
         
-        self.search_entry = tk.Entry(search_frame, 
-                                    textvariable=self.search_var,
-                                    bg=COLORS['surface_container_low'],
+        self.top_search_entry = tk.Entry(search_frame, 
+                                    textvariable=self.top_search_var,
+                                    bg=COLORS['white'],
                                     fg=COLORS['on_surface'],
                                     font=("Inter", 12),
                                     insertbackground=COLORS['primary'],
                                     relief=tk.FLAT,
                                     borderwidth=0)
-        self.search_entry.pack(side=tk.LEFT, padx=16, pady=8, fill=tk.X, expand=True)
-        self.search_entry.insert(0, "🔍 Search documents...")
-        self.search_entry.config(fg=COLORS['outline'])
-        self.search_entry.bind('<FocusIn>', self._clear_search_placeholder)
-        self.search_entry.bind('<FocusOut>', self._restore_search_placeholder)
-        self.search_entry.bind('<Return>', self.perform_search)
+        self.top_search_entry.pack(side=tk.LEFT, padx=16, pady=8, fill=tk.X, expand=True)
+        self.top_search_entry.insert(0, "🔍 Search documents...")
+        self.top_search_entry.config(fg=COLORS['outline'])
+        self.top_search_entry.bind('<FocusIn>', self._clear_search_placeholder)
+        self.top_search_entry.bind('<FocusOut>', self._restore_search_placeholder)
+        self.top_search_entry.bind('<Return>', self.perform_search)
         
         # Action buttons
         buttons_frame = tk.Frame(header, bg=COLORS['white'])
@@ -346,7 +356,12 @@ class ChatApp:
             lambda e: self.chat_canvas.configure(scrollregion=self.chat_canvas.bbox("all"))
         )
         
-        self.chat_canvas.create_window((0, 0), window=self.chat_frame, anchor="nw", width=950)
+        # Handle canvas resizing
+        def on_canvas_configure(event):
+            self.chat_canvas.itemconfig("chat_window", width=event.width)
+        
+        self.chat_canvas.bind("<Configure>", on_canvas_configure)
+        self.chat_canvas.create_window((0, 0), window=self.chat_frame, anchor="nw", tags="chat_window")
         self.chat_canvas.configure(yscrollcommand=scrollbar.set)
         
         self.chat_canvas.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
@@ -1010,7 +1025,7 @@ class ChatApp:
     
     def _get_doc_from_selection(self, index):
         """Helper to get document info from listbox index"""
-        search_text = self.search_var.get().strip()
+        search_text = self.top_search_var.get().strip()
         # Check if we're in search mode
         if search_text and search_text != "🔍 Search documents...":
             # Try to extract filename from search result line
@@ -1124,14 +1139,14 @@ class ChatApp:
             self.doc_listbox.insert(tk.END, f"  {icon} {filename} ({chunk_count} chunks)")
     
     def _clear_search_placeholder(self, event=None):
-        if self.search_entry.get() == "🔍 Search documents...":
-            self.search_entry.delete(0, tk.END)
-            self.search_entry.config(fg=COLORS['on_surface'])
+        if self.top_search_entry.get() == "🔍 Search documents...":
+            self.top_search_entry.delete(0, tk.END)
+            self.top_search_entry.config(fg=COLORS['on_surface'])
     
     def _restore_search_placeholder(self, event=None):
-        if not self.search_entry.get().strip():
-            self.search_entry.insert(0, "🔍 Search documents...")
-            self.search_entry.config(fg=COLORS['outline'])
+        if not self.top_search_entry.get().strip():
+            self.top_search_entry.insert(0, "🔍 Search documents...")
+            self.top_search_entry.config(fg=COLORS['outline'])
             self.refresh_document_list()
     
     def on_search_change(self, *args):
@@ -1141,7 +1156,7 @@ class ChatApp:
         self.search_timer = self.root.after(300, self.perform_search)
     
     def perform_search(self, event=None):
-        search_text = self.search_var.get().strip()
+        search_text = self.top_search_var.get().strip()
         
         if not search_text or search_text == "🔍 Search documents...":
             self.refresh_document_list()
