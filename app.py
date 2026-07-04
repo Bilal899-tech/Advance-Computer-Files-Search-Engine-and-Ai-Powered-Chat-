@@ -11,6 +11,7 @@ from core import Config, VectorStore, Database, DocumentProcessor, detect_hardwa
 from smolagent_helper import KnowledgeAgent
 from search_engine import DualSearchEngine, CrossLocationFinder
 
+os.makedirs('logs', exist_ok=True)
 logging.basicConfig(
     level=logging.INFO,
     format='%(asctime)s - %(levelname)s - %(message)s',
