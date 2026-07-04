@@ -1,0 +1,42 @@
+To make sure this exact project setup flies through the SPUR Capstone review on your first try, here is how your specific concept maps directly to the required items on the [submission checklist](https://spuric.com/).
+
+By structuring your work around these specific files, you fulfill every single category of the grading rubric simultaneously.
+
+### 📁 Required Project Files & Assets
+
+* **`README.md` & Design Doc (500–1500 words)**
+* **What it does:** Explain that it parses uploaded PDFs, extracts structure (headings/searchable text), uses a tool call to pull direction/tracking info, and uses a local model (`Qwen:0.6B`) to summarize the notes in conversational language.
+* **Why these choices:** State that you chose `Qwen:0.6B` run locally on SPUR compute for **zero token cost, low latency, and full data sovereignty**.
+* **Honest Limitations (Crucial for a Pass!):** Explicitly state that a 0.6B model has a small context window and might hallucinate if the prompt is too vague. Documenting this gets you full points for writeup quality.
+
+
+* **`evals/dataset.json` (The 15% Weight Backbone)**
+* Create **20 distinct test cases** before you finalize the code.
+* Include 10 factual questions directly from your PDFs (e.g., *"What is the policy on X?"*) and 10 tracking scenario queries designed to force your model to call your tracking tool.
+
+
+* **`evals/results.json` (Evidence of Iteration)**
+* Show a baseline run where the model might miss a tool call or truncate a summary, and an improved run after you tweak your prompt structure.
+
+
+* **`app.py` (or your main execution script)**
+* Keep it simple. Use `pypdf` for the text extraction ("presurf").
+* Hardcode the tracking function tool clearly so the model can easily invoke it via a JSON print or a structured string block.
+
+
+* **Proof of Sovereign Compute Asset**
+* Take a quick screenshot of your SPUR environment or include a log capturing an `nvidia-smi` run showing the local `Qwen` model loaded into GPU VRAM.
+
+
+* **3–5 Minute Video Walkthrough**
+* Record your screen. Show your terminal running the evaluation script, highlight a quick PDF upload example, and demonstrate the model successfully triggering the tracking tool and outputting the final summary note.
+
+
+
+---
+
+### Your Immediate Milestone
+
+Don't write any pipeline code yet! Write your **one-paragraph user description** (who is reading these shared notes?) and draft your **20 evaluation questions** in a text file.
+
+Once those are set, you have the target to code toward. Would you like a minimal python template for setting up structured tool-calling prompts with a model as small as Qwen?
