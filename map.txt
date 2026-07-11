@@ -1,0 +1,569 @@
+╔══════════════════════════════════════════════════════════════╗
+║    Cognitive AI — SPUR Knowledge Workspace — WORKFLOW MAP   ║
+╚══════════════════════════════════════════════════════════════╝
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+1.  PROJECT OVERVIEW
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  Cognitive AI is a desktop application that:
+  • Indexes documents (PDF, Markdown, TXT) from folders
+  • Provides dual-mode search (rule-based + AI-assisted)
+  • Answers questions via RAG with hybrid inference (SPUR API → local Ollama fallback)
+  • Remembers conversation history across sessions
+  • Auto-adapts: tries SPUR sovereign endpoints first, falls back to local Ollama if unavailable
+
+  ┌─ Files ───────────────────────────────────────────────────┐
+  │  app.py              Main GUI (tkinter, ~1370 lines)      │
+  │  core.py             Config, Database, VectorStore,       │
+  │                      DocumentProcessor, LLMClient         │
+  │  search_engine.py    DualSearchEngine, FileScanner,        │
+  │                      RuleBasedSearcher, CrossLocationFinder│
+  │  smolagent_helper.py KnowledgeAgent (RAG pipeline)        │
+  │  eval.py             Evaluation system (20 test cases)    │
+  │  config.yaml         All settings (models, paths, search) │
+  │  .env                SPUR API credentials (gitignored)    │
+  │  .env.example        API key template                     │
+  │  map.txt             THIS FILE — workflow & architecture   │
+  └────────────────────────────────────────────────────────────┘
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+2.  COMPLETE DATA FLOW
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  A. DOCUMENT IMPORT (app.py → core.py)
+  ─────────────────────────────────────────────────────────────
+
+  User clicks "Import Folder" or "+ Add File"
+       │
+       ▼
+  add_folder() or add_file()
+       │
+       ├── File selected → _show_folder_import_dialog()
+       │   ┌──────────────────────────────────────────┐
+       │   │ Dialog shows all detected files           │
+       │   │ with checkboxes (default all selected).   │
+       │   │ "Select All" / "Deselect All" toggle.     │
+       │   │ Already-imported files grayed out.        │
+       │   └──────────────────────────────────────────┘
+       │       │
+       │       ▼
+       │   _process_selected_files(files)
+       │
+       ▼
+  DocumentProcessor.process_file(file_path)
+       │
+       ├── PDF  → extract_text_from_pdf()   → PdfReader per page
+       ├── MD   → extract_text_from_markdown() → read entire file
+       └── TXT  → extract_text_from_markdown() → read entire file
+       │
+       ▼
+  DocumentProcessor.chunk_text(text, page, filename)
+       │
+       ├── Splits text into chunks of chunk_size (default: 500)
+       ├── chunk_overlap between chunks (default: 50)
+       └── Each chunk gets: {chunk, pdf_name, page, start_pos, end_pos}
+       │
+       ▼
+  VectorStore.add_chunks(chunks, metadata)
+       │
+       ├── For each chunk: get_embedding() via SPUR API / text-embedding-3-small
+       ├── normalize_embedding() (L2 norm → unit vector)
+       ├── index.add(embeddings_np) → FAISS IndexFlatIP
+       └── metadata saved to JSON file
+       │
+       ▼
+  Database.add_document(filename, filepath, filetype, chunk_count)
+  Database.update_system_stats(total_chunks)
+       │
+       ▼
+  UI updates: refresh_document_list(), update_stats(),
+
+
+  B. SIDEBAR SEARCH (search_engine.py)
+  ─────────────────────────────────────────────────────────────
+
+  User types keyword + presses Enter or clicks 🔍
+       │
+       ▼
+  _run_search()
+       │
+       ├── mode = "Quick (no AI)" or "Smart (+AI summary)"
+       │
+       ▼
+  DualSearchEngine.search(keyword, file_paths, mode)
+       │
+       ├── PHASE 1 (always, 0% AI):
+       │   RuleBasedSearcher.search_files(paths, keyword)
+       │   │
+       │   ├── For each file: extract_text_from_file()
+       │   ├── re.finditer(keyword, text, IGNORECASE)
+       │   ├── Build excerpt with [keyword] markers
+       │   ├── Context window: 300 chars before/after each match
+       │   └── Rank by match frequency × relevance multiplier
+       │   │
+       │   └── Returns: [ {file_path, filename, page, excerpt, 
+       │                   full_context, score}, ... ]
+       │
+       ├── PHASE 2 (only if mode="smart", ~20% AI):
+       │   LightweightSummarizer.batch_summarize(top_5, keyword)
+       │   │
+       │   ├── Only top 5 pre-located segments get AI
+       │   ├── Model: spur-cortex
+       │   ├── temperature=0.1, max_tokens=256, top_p=0.5
+       │   ├── Prompt: "Extract only info relevant to question"
+       │   └── Returns: segments with ai_summary field added
+       │
+       └── Returns: {mode, keyword, total_matches, results, 
+                       timing, ai_usage_pct}
+       │
+       ▼
+  _display_search_results()
+       │
+       ├── Results shown in sidebar listbox
+       ├── Each result: "filename (p.N)" + ai_summary (if smart)
+       └── Status bar: "N matches | search: X.Xs | AI: Y.Ys | AI: Z%"
+       │
+       ▼
+  Double-click result → _open_search_result()
+       │
+       └── Opens document in viewer panel
+
+
+  C. BROWSE STORAGE (Cross-Location Search)
+  ─────────────────────────────────────────────────────────────
+
+  User clicks "Browse Storage" → selects a folder
+       │
+       ▼
+  _do_browse(folder)
+       │
+       ├── If keyword entered:
+       │   CrossLocationFinder.find_files_by_content(keyword, roots)
+       │   │  ├── FileScanner.scan_multiple_roots() → all files
+       │   │  └── RuleBasedSearcher.search_files() → find matches
+       │   │
+       │   └── Results: [ {path, filename, folder, 
+       │                   match_count, excerpts}, ... ]
+       │
+       └── If no keyword:
+           FileScanner.scan_folder(folder) → file manifest
+           └── Results: [ {path, filename, ext, size_kb, modified}, ... ]
+
+
+  D. CHAT / RAG QUERY (app.py → smolagent_helper.py)
+  ─────────────────────────────────────────────────────────────
+
+  User types question + Enter or clicks "Send →"
+       │
+       ▼
+  send_message()
+       │
+       ├── If active_document connected:
+       │   query = "[Context: doc_name] user_question"
+       │
+       ▼
+  _process_message(query)
+       │
+       ├── 1. KnowledgeAgent.search_knowledge(query)
+       │   │   └── VectorStore.search(query_embedding, top_k=3)
+       │   │       → [ {chunk, pdf_name, page, score}, ... ]
+       │   │
+       ├── 2. KnowledgeAgent.format_context(results)
+       │   │   → "--- Source 1 (Page 2, report.pdf) ---\n{chunk}..."
+       │   │
+       ├── 3. KnowledgeAgent.build_prompt(query, context)
+       │   │   → "Use ONLY provided context. If no answer, say so."
+       │   │
+       ├── 4. KnowledgeAgent.calculate_confidence(results)
+       │   │   → confidence% from top score × 100
+       │   │
+        ├── 5. LLMClient.generate(model=spur-cortex, 
+       │   │        fallback_model=qwen2.5:3b, prompt, 
+       │   │        options={temp:0.7, max_tokens:1024, top_p:0.9})
+       │   │   → tries SPUR first, falls back to local Ollama
+       │   │   → ai_response
+       │   │
+       ├── 6. Database.add_memory(query, ai_response)
+       │
+       ▼
+  _update_chat_response(message, confidence, latency, sources)
+       │
+       └── append_message("AI", message, confidence, latency, sources)
+           └── Shows: confidence% badge, retrieval latency, 
+                       source list (filename, page, score)
+
+
+  E. CONVERSATION MEMORY FLOW
+  ─────────────────────────────────────────────────────────────
+
+  User Question
+       │
+       ├──────────────────┐
+       ▼                  ▼
+  Conversation Memory   FAISS Search
+  (SQLite memories)    (VectorStore)
+       │                  │
+       └──────┬───────────┘
+              ▼
+       KnowledgeAgent
+              │
+              ▼
+        SPUR API (spur-cortex)
+              │
+              ▼
+       Answer + Citations
+
+  Every Q&A pair saved to SQLite `memories` table.
+  Retrieved on app restart for continuity.
+
+
+  F. DOCUMENT CONNECTION & DRAG-DROP
+  ─────────────────────────────────────────────────────────────
+
+  Single-click doc in sidebar → connect_document()
+       │
+       ├── Toggles active_document on/off
+       ├── Shows "📄 Connected: filename" above chat input
+       └── Click label to disconnect
+
+  Double-click doc → open_document() → opens in viewer panel
+
+  Drag doc from sidebar → drop on chat area → _drag_end()
+       │
+       ├── Checks if drop position is within chat canvas
+       ├── Connects document to chat
+       └── Shows "📎 Connected document: {filename}" in chat
+
+
+  G. EVALUATION PIPELINE (eval.py)
+  ─────────────────────────────────────────────────────────────
+
+  python eval.py or double-click run_eval.bat
+       │
+       ▼
+  run_evaluation()
+       │
+       ├── Loads Config
+       ├── Processes sample_report.pdf if not already indexed
+       ├── Loads evals/dataset.json (20 test cases)
+       │
+       ├── For each case:
+       │   ├── VectorStore.search(case.question)
+       │   ├── Build prompt → LLMClient.generate()
+       │   ├── score_response() → keyword matching
+       │   └── Record: score, passed, timing, category, type
+       │
+       └── Computes: pass_rate, avg_score, category/type/difficulty scores
+           └── Saves to evals/results.json
+
+
+  H. RESET FLOW
+  ─────────────────────────────────────────────────────────────
+
+  User clicks "Reset" → confirmation dialog
+       │
+       ▼
+  reset_store()
+       │
+       ├── Deletes: faiss.index, metadata.json, app.db
+       ├── Reinitializes: Database, VectorStore
+       ├── Clears: doc list, chat history
+       └── Refreshes: stats, system status
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+3.  SEARCH SYSTEM — DUAL MODE ARCHITECTURE
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  ┌────────────────────────────────────────────────────────┐
+  │                    USER QUERY                          │
+  └────────┬───────────────────────────────────┬───────────┘
+           │                                   │
+           ▼                                   ▼
+  ┌──────────────────┐              ┌──────────────────────┐
+  │ MODE: QUICK      │              │ MODE: SMART          │
+  │ (0% AI)          │              │ (~20% AI)            │
+  ├──────────────────┤              ├──────────────────────┤
+  │ RuleBasedSearcher│              │ RuleBasedSearcher    │
+  │ → regex match    │              │ → regex match        │
+  │ → rank by count  │              │ → rank by count      │
+  │ → return excerpts│              │ → top 5 segments     │
+  │                  │              │ → LightweightSum-    │
+  │ Latency: ~0.01s  │              │   marizer (AI)       │
+  │ AI Usage: 0%     │              │ → summarized answers │
+  │                  │              │                      │
+  │ Best for: quick  │              │ Latency: ~1-3s       │
+  │ keyword lookup   │              │ AI Usage: ~20%       │
+  │                  │              │                      │
+  │                  │              │ Best for: complex    │
+  │                  │              │ questions needing    │
+  │                  │              │ synthesis            │
+  └──────────────────┘              └──────────────────────┘
+
+  MODEL:
+  ┌──────────────────────────────────────────────────────────────┐
+  │  PRIMARY (SPUR):    spur-cortex                              │
+  │  FALLBACK (Ollama): qwen2.5:3b (chat) / qwen3:0.6b (search) │
+  │  EMBEDDING (local): all-minilm:l6-v2 (384-dim, always local)  │
+  │                                                              │
+  │  Set in config.yaml: models.chat / models.chat_fallback      │
+  │  SPUR creds in .env: OPENAI_BASE_URL, OPENAI_API_KEY        │
+  └──────────────────────────────────────────────────────────────┘
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+4.  CLASS RELATIONSHIP MAP
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  ChatApp (app.py)
+  ├── Config                  (core.py)     ← reads YAML
+  ├── Database                (core.py)     ← SQLite
+  ├── VectorStore             (core.py)     ← FAISS + local embeddings
+  ├── DocumentProcessor       (core.py)     ← text extraction
+  ├── KnowledgeAgent       (smolagent_helper.py)  ← RAG pipeline
+  │   ├── VectorStore         (core.py)
+  │   └── Database            (core.py)
+  ├── DualSearchEngine     (search_engine.py)  ← dual search
+  │   ├── FileScanner         (search_engine.py)
+  │   ├── RuleBasedSearcher   (search_engine.py)
+  │   └── LightweightSummarizer (search_engine.py) ← AI via SPUR
+  └── CrossLocationFinder  (search_engine.py)  ← cross-storage
+      ├── FileScanner         (search_engine.py)
+      └── RuleBasedSearcher   (search_engine.py)
+
+  All API calls route through LLMClient (core.py)
+  → dual OpenAI clients: SPUR (primary) + local Ollama (fallback)
+  → auto-detects which provider is available
+  → active provider shown in UI status bar
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+5.  CONFIGURATION REFERENCE (config.yaml)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  models:
+    chat: spur-cortex                # Primary: SPUR API chat model
+    chat_fallback: qwen2.5:3b        # Fallback: local Ollama chat
+    embedding: all-minilm:l6-v2      # Embedding (always local, 384-dim)
+    search_chat: spur-cortex         # Primary: SPUR search model
+    search_chat_fallback: qwen3:0.6b # Fallback: local Ollama search
+
+  ollama:
+    host: http://localhost:11434    # Legacy (unused, kept for compat)
+
+  paths:
+    database: data/app.db           # SQLite file
+    embeddings: data/embeddings/    # FAISS index + metadata
+
+  chunking:
+    chunk_size: 500                 # Characters per chunk
+    chunk_overlap: 50               # Overlap between chunks
+
+  vector_store:
+    top_k: 3                        # Default retrieval count
+    use_normalized_embeddings: true # IndexFlatIP (cosine sim)
+
+  search:
+    default_mode: quick             # quick (0% AI) or smart (~20% AI)
+    context_chars: 300              # Context window for keyword matches
+    max_results: 20                 # Max search results
+    model_tier: low                 # low or high (maps to same SPUR model)
+    search_roots:                   # Cross-location search paths
+      - data/pdfs
+      - data/test_documents
+
+  .env file (optional): SPUR API credentials for primary provider
+    OPENAI_BASE_URL="https://ai.spuric.com/v1"
+    OPENAI_API_KEY="your_spur_api_key"
+    Without .env, the system runs entirely on local Ollama.
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+6.  WORKING STYLE — BEST PRACTICES
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  ┌─ AI USAGE PRINCIPLE ────────────────────────────────────┐
+  │  Rule-based search is ALWAYS the primary path.          │
+  │  AI is summoned ONLY for summarization of pre-located   │
+  │  text segments. Target: ≤20% AI processing per query.   │
+  │                                                          │
+  │  Quick mode  = 0% AI, instant results                   │
+  │  Smart mode  = ~20% AI, adds synthesis to top results   │
+  └──────────────────────────────────────────────────────────┘
+
+  ┌─ PERFORMANCE TIPS ──────────────────────────────────────┐
+  │  • Set your SPUR API key in .env before running          │
+  │  • For keyword lookups: use Quick mode (instant)        │
+  │  • For understanding: use Smart mode (adds AI summary)  │
+  │  • Large folders: import once, then search is fast      │
+  │  • FAISS index persists across restarts                 │
+  │  • Conversation memory persists in SQLite               │
+  └──────────────────────────────────────────────────────────┘
+
+  ┌─ UI NAVIGATION ─────────────────────────────────────────┐
+  │  Sidebar (left): Search bar + results + document list   │
+  │  Viewer (center-left): Opens on double-click document   │
+  │  Chat (center-right): Q&A panel with citations          │
+  │  Status bar (bottom): System health + project stats     │
+  │  Header (top): Import, Reset, Viewer toggle             │
+  └──────────────────────────────────────────────────────────┘
+
+  ┌─ DATA PERSISTENCE ──────────────────────────────────────┐
+  │  data/app.db          → SQLite: memories, metadata      │
+  │  data/embeddings/     → FAISS index + chunk metadata   │
+  │  evals/results.json   → Evaluation results              │
+  │  logs/app.log         → Application logs                │
+  └──────────────────────────────────────────────────────────┘
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+7.  COMPLETE WORKFLOW SCENARIOS
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  SCENARIO A: "Find the author name in Q3_report.pdf"
+  ─────────────────────────────────────────────────────────────
+  1. Import folder containing Q3_report.pdf
+  2. Single-click report in sidebar → connects to chat
+  3. Type "Who is the author?" in chat → Send
+  4. System prepends [Context: Q3_report.pdf] to query
+  5. VectorStore filters search to only that document
+  6. SPUR API returns answer with source citation
+
+  SCENARIO B: "Search all documents for 'budget'"
+  ─────────────────────────────────────────────────────────────
+  1. Type "budget" in sidebar search bar
+  2. Set mode to "Quick (no AI)" for instant results
+  3. System: RuleBasedSearcher scans all indexed files
+  4. Results show: "report.pdf (p.5)" with matching excerpt
+  5. Double-click result → opens document at that page
+
+  SCENARIO C: "Summarize what documents say about AI"
+  ─────────────────────────────────────────────────────────────
+  1. Type "AI" in sidebar search bar
+  2. Set mode to "Smart (+AI summary)"
+  3. Phase 1: RuleBasedSearcher finds all matches
+  4. Phase 2: LightweightSummarizer summarizes top 5 segments
+  5. Results show: "report.pdf (p.3) ↳ AI is transforming..."
+
+  SCENARIO D: "Find my to-do list project folder"
+  ─────────────────────────────────────────────────────────────
+  1. Click "Browse Storage"
+  2. Select root folder (e.g., Documents)
+  3. Type "to-do" in search bar
+  4. CrossLocationFinder.find_files_by_content("to-do", roots)
+  5. Scans all supported files in Documents and subfolders
+  6. Returns files containing "to-do" with match counts
+
+  SCENARIO E: "Import only specific files from a folder"
+  ─────────────────────────────────────────────────────────────
+  1. Click "Import Folder" → select folder
+  2. Dialog shows all 20 detected files, all checked
+  3. Uncheck the ones you don't want
+  4. Click "Import Selected"
+  5. Only checked files get processed and indexed
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+8.  COMPONENT DEPENDENCY TREE
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  Python 3.8+
+  ├── tkinter          (GUI, built-in)
+  ├── openai           (SPUR + Ollama API client via LLMClient)
+  ├── faiss-cpu        (vector similarity search)
+  ├── numpy            (array math for embeddings)
+  ├── pypdf            (PDF text extraction)
+  ├── python-dotenv    (.env file loader for SPUR creds)
+  ├── ollama           (local model server)
+  ├── pyyaml           (configuration parsing)
+  └── (stdlib: os, re, json, sqlite3, threading, 
+              pathlib, datetime, logging, webbrowser)
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+9.  QUICK REFERENCE — METHOD INDEX
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  app.py (ChatApp)
+  ─────────────────────────────────────────────────────────────
+  setup_ui()                    → Builds entire window layout
+  create_header_bar()           → Logo, buttons, search bar
+  create_sidebar()              → Search panel + document list
+  create_chat_area()            → Chat canvas + input
+  create_status_bar()           → System indicators + stats
+  create_document_viewer()      → Document viewer panel
+  check_system_status()         → Tests SPUR API, FAISS, DB
+  update_stats()                → Refreshes doc/chunk counts
+
+  add_file()                    → File picker → process
+  add_folder()                  → Folder picker → dialog → process
+  _show_folder_import_dialog()  → Checklist dialog for selection
+  _process_file_thread()        → Single file pipeline
+  _process_selected_files()     → Batch file pipeline
+  reset_store()                 → Wipes all data
+
+  connect_document()            → Single-click: toggle chat context
+  open_document()               → Double-click: open in viewer
+  display_document()            → Render file in viewer
+  toggle_viewer()               → Show/hide viewer panel
+  _drag_start/motion/end()      → Drag-drop doc to chat
+
+  _run_search()                 → Triggers sidebar search
+  _do_search()                  → DualSearchEngine call
+  _display_search_results()     → Renders search results
+  _open_search_result()         → Double-click result → viewer
+  _browse_storage()             → Folder picker → cross-search
+  _do_browse()                  → CrossLocationFinder call
+  _disconnect_document()        → Removes chat context
+
+  send_message()                → Sends user chat message
+  _process_message()            → RAG pipeline + SPUR API call
+  _update_chat_response()       → Renders AI response
+  append_message()              → Creates message bubble in chat
+  _search_focus_in/out()        → Placeholder management
+  _clear/restore_placeholder()  → Placeholder management
+
+  core.py
+  ─────────────────────────────────────────────────────────────
+  LLMClient.__init__()          → Dual OpenAI clients (SPUR + local Ollama)
+  LLMClient.generate()          → Chat: try SPUR first, fallback to Ollama
+  LLMClient.embeddings()        → Embeddings: try SPUR first, fallback to Ollama
+  LLMClient.list()              → Provider detection (SPUR → Ollama)
+  LLMClient.active_provider     → 'spur' or 'local'
+  Config.__init__()             → Loads YAML config
+  Database.init_db()            → Creates SQLite tables
+  Database.add_memory()         → Saves Q&A pair
+  Database.get_memories()       → Retrieves conversation history
+  Database.add_document()       → Records document metadata
+  Database.get_documents()      → Lists all indexed documents
+  VectorStore.add_chunks()      → Embeds + indexes chunks
+  VectorStore.search()          → Semantic search (FAISS)
+  VectorStore.keyword_search()  → String match search
+  DocumentProcessor.process_file()       → Extract + chunk
+  DocumentProcessor.process_folder()     → Recursive file find
+
+  search_engine.py
+  ─────────────────────────────────────────────────────────────
+  FileScanner.scan_folder()     → Recursive file manifest
+  FileScanner.scan_multiple_roots() → Cross-location scan
+  RuleBasedSearcher.search_files()    → Regex keyword search
+  RuleBasedSearcher.locate_keyword_in_doc() → Precise location
+  LightweightSummarizer.summarize_segment() → AI on 1 segment
+  LightweightSummarizer.batch_summarize()  → AI on top 5
+  DualSearchEngine.search()     → Quick or Smart mode
+  CrossLocationFinder.find_files_by_content() → Content search
+  CrossLocationFinder.find_files_by_name()    → Name search
+  CrossLocationFinder.locate_folder()         → Folder search
+
+  smolagent_helper.py
+  ─────────────────────────────────────────────────────────────
+  KnowledgeAgent.search_knowledge()    → VectorStore.search()
+  KnowledgeAgent.format_context()      → Build context string
+  KnowledgeAgent.build_prompt()        → RAG prompt template
+  KnowledgeAgent.calculate_confidence()→ Score normalization
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+EOF — Cognitive AI Workflow Map
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━

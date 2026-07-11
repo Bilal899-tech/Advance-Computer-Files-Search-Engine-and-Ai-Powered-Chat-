@@ -1,0 +1,42 @@
+To make sure this exact project setup flies through the SPUR Capstone review on your first try, here is how your specific concept maps directly to the required items on the submission checklist.
+
+By structuring your work around these specific files, you fulfill every single category of the grading rubric simultaneously.
+
+### Required Project Files & Assets
+
+* **`README.md` & Design Doc (500–1500 words)**
+* **What it does:** Explain that it parses uploaded PDFs, extracts structure (headings/searchable text), indexes them via vector embeddings, and uses the SPUR API (`spur-cortex`) to answer questions with grounded citations.
+* **Why these choices:** State that you chose SPUR's OpenAI-compatible API for **no local GPU requirement, easy setup, and fast inference**. The `text-embedding-3-small` model provides 1536-dimensional embeddings for accurate semantic search.
+* **Honest Limitations (Crucial for a Pass!):** Explicitly state that a small embedding model has limited context and the model might hallucinate if the prompt is too vague. Also note that an internet connection is required for API access. Documenting this gets you full points for writeup quality.
+
+
+* **`evals/dataset.json` (The 15% Weight Backbone)**
+* Create **20 distinct test cases** before you finalize the code.
+* Include 10 factual questions directly from your PDFs (e.g., *"What is the policy on X?"*) and 10 scenario queries that test the RAG pipeline's ability to synthesize information from multiple chunks.
+
+
+* **`evals/results.json` (Evidence of Iteration)**
+* Show a baseline run where the model might truncate a summary or miss context, and an improved run after you tweak your prompt structure or chunking strategy.
+
+
+* **`app.py` (or your main execution script)**
+* Keep it simple. Use `pypdf` for text extraction. The RAG pipeline uses `LLMClient` (in `core.py`) to call the SPUR API with the `spur-cortex` model.
+* Hardcode the SPUR API configuration via `.env` file (see `.env.example` for the template).
+
+
+* **Proof of Sovereign Compute Asset**
+* No local GPU needed! Your SPUR API key serves as proof of compute access. Include a screenshot showing a successful API call response in your documentation.
+
+
+* **3–5 Minute Video Walkthrough**
+* Record your screen. Show your terminal running the evaluation script, highlight a quick PDF upload example, and demonstrate the model successfully answering questions with source citations via the SPUR API.
+
+
+
+---
+
+### Your Immediate Milestone
+
+Don't write any pipeline code yet! Write your **one-paragraph user description** (who is reading these shared notes?) and draft your **20 evaluation questions** in a text file.
+
+Once those are set, you have the target to code toward. Would you like a minimal python template for setting up structured RAG prompts with the SPUR API?

@@ -1,0 +1,10 @@
+pypdf
+faiss-cpu
+numpy
+openai
+python-dotenv
+pyyaml
+ollama
+smolagents
+transformers
+torch

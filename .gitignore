@@ -1,0 +1,42 @@
+# Python
+__pycache__/
+*.py[cod]
+*.so
+*.egg-info/
+*.egg
+build/
+dist/
+
+# Virtual Environment
+venv/
+env/
+.venv
+
+# IDE
+.vscode/
+.idea/
+
+# Database
+*.db
+*.sqlite
+*.sqlite3
+
+# Vector store & embeddings
+data/embeddings/
+*.index
+metadata.json
+
+# Logs
+logs/
+*.log
+
+# OS
+.DS_Store
+Thumbs.db
+
+# JSON reports
+report.json
+evals/results.json
+
+# Environment variables (API keys, secrets)
+.env
